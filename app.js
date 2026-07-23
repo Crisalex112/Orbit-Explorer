@@ -335,25 +335,40 @@ function bindEvents() {
   $('#registerForm').addEventListener('submit', (event) => {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(event.currentTarget));
-    const candidate = {
-      id: idFromName(data.name),
-      name: data.name.trim(),
-      type: data.type.trim(),
-      temperatureK: Number(data.temperatureK),
-      pressureAtm: Number(data.pressureAtm),
-      gravity: Number(data.gravity),
-      resources: Number(data.resources),
-      waterPotential: Number(data.waterPotential),
-      radiationRisk: Number(data.radiationRisk),
-      missionCost: Number(data.missionCost),
-      fuel: Number(data.fuel),
-      duration: Number(data.duration),
-      notes: data.notes.trim(),
-      color: `hsl(${Math.floor(Math.random() * 360)} 75% 65%)`
+    const candidateInput = {
+      name: String(data.name ?? '').trim(),
+      type: String(data.type ?? '').trim(),
+      temperatureK: data.temperatureK,
+      pressureAtm: data.pressureAtm,
+      gravity: data.gravity,
+      resources: data.resources,
+      waterPotential: data.waterPotential,
+      radiationRisk: data.radiationRisk,
+      missionCost: data.missionCost,
+      fuel: data.fuel,
+      duration: data.duration,
+      notes: String(data.notes ?? '').trim()
     };
-    const errors = validateBodyInput(candidate, bodies);
+    const errors = validateBodyInput(candidateInput, bodies);
     $('#registerErrors').innerHTML = errors.map((error) => `• ${escapeHtml(error)}`).join('<br>');
     if (errors.length) return;
+
+    const candidate = {
+      id: idFromName(candidateInput.name),
+      name: candidateInput.name,
+      type: candidateInput.type,
+      temperatureK: Number(candidateInput.temperatureK),
+      pressureAtm: Number(candidateInput.pressureAtm),
+      gravity: Number(candidateInput.gravity),
+      resources: Number(candidateInput.resources),
+      waterPotential: Number(candidateInput.waterPotential),
+      radiationRisk: Number(candidateInput.radiationRisk),
+      missionCost: Number(candidateInput.missionCost),
+      fuel: Number(candidateInput.fuel),
+      duration: Number(candidateInput.duration),
+      notes: candidateInput.notes,
+      color: `hsl(${Math.floor(Math.random() * 360)} 75% 65%)`
+    };
     bodies.push(candidate);
     persist();
     event.currentTarget.reset();

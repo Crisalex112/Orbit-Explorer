@@ -298,27 +298,36 @@ function compareWithEarth(body) {
 function validateBodyInput(candidate, existingBodies) {
   const errors = [];
   const normalizedName = String(candidate.name || '').trim();
+  const normalizedType = String(candidate.type || '').trim();
 
   if (!normalizedName) errors.push('El nombre es obligatorio.');
-  if (existingBodies.some((body) => body.name.toLowerCase() === normalizedName.toLowerCase())) {
+  if (!normalizedType) errors.push('El tipo o ubicación es obligatorio.');
+  if (normalizedName && existingBodies.some((body) => body.name.toLowerCase() === normalizedName.toLowerCase())) {
     errors.push('Ya existe un cuerpo celeste con ese nombre.');
   }
 
   const validations = [
-    ['temperatureK', 0, 1500, 'La temperatura debe estar entre 0 y 1500 K.'],
-    ['pressureAtm', 0, 120, 'La presión debe estar entre 0 y 120 atm.'],
-    ['gravity', 0.000001, 35, 'La gravedad debe ser mayor que 0 y menor o igual a 35 m/s².'],
-    ['resources', 0, 100, 'Los recursos deben estar entre 0% y 100%.'],
-    ['waterPotential', 0, 100, 'El potencial de agua debe estar entre 0% y 100%.'],
-    ['radiationRisk', 0, 100, 'El riesgo de radiación debe estar entre 0% y 100%.'],
-    ['missionCost', 0, 10000, 'El costo debe ser mayor o igual a 0.'],
-    ['fuel', 0, 10000, 'El combustible debe ser mayor o igual a 0.'],
-    ['duration', 0, 1000, 'La duración debe ser mayor o igual a 0.']
+    ['temperatureK', 0, 1500, 'La temperatura es obligatoria.', 'La temperatura debe estar entre 0 y 1500 K.'],
+    ['pressureAtm', 0, 120, 'La presión atmosférica es obligatoria.', 'La presión debe estar entre 0 y 120 atm.'],
+    ['gravity', 0.000001, 35, 'La gravedad es obligatoria.', 'La gravedad debe ser mayor que 0 y menor o igual a 35 m/s².'],
+    ['resources', 0, 100, 'Los recursos aprovechables son obligatorios.', 'Los recursos deben estar entre 0% y 100%.'],
+    ['waterPotential', 0, 100, 'El potencial de agua es obligatorio.', 'El potencial de agua debe estar entre 0% y 100%.'],
+    ['radiationRisk', 0, 100, 'El riesgo de radiación es obligatorio.', 'El riesgo de radiación debe estar entre 0% y 100%.'],
+    ['missionCost', 0, 10000, 'El costo de misión es obligatorio.', 'El costo debe ser mayor o igual a 0.'],
+    ['fuel', 0, 10000, 'El combustible es obligatorio.', 'El combustible debe ser mayor o igual a 0.'],
+    ['duration', 0, 1000, 'La duración estimada es obligatoria.', 'La duración debe ser mayor o igual a 0.']
   ];
 
-  for (const [key, min, max, message] of validations) {
-    const value = Number(candidate[key]);
-    if (!Number.isFinite(value) || value < min || value > max) errors.push(message);
+  for (const [key, min, max, requiredMessage, rangeMessage] of validations) {
+    const rawValue = candidate[key];
+
+    if (rawValue === null || rawValue === undefined || String(rawValue).trim() === '') {
+      errors.push(requiredMessage);
+      continue;
+    }
+
+    const value = Number(rawValue);
+    if (!Number.isFinite(value) || value < min || value > max) errors.push(rangeMessage);
   }
 
   return errors;
@@ -828,25 +837,40 @@ function bindEvents() {
   $('#registerForm').addEventListener('submit', (event) => {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(event.currentTarget));
-    const candidate = {
-      id: idFromName(data.name),
-      name: data.name.trim(),
-      type: data.type.trim(),
-      temperatureK: Number(data.temperatureK),
-      pressureAtm: Number(data.pressureAtm),
-      gravity: Number(data.gravity),
-      resources: Number(data.resources),
-      waterPotential: Number(data.waterPotential),
-      radiationRisk: Number(data.radiationRisk),
-      missionCost: Number(data.missionCost),
-      fuel: Number(data.fuel),
-      duration: Number(data.duration),
-      notes: data.notes.trim(),
-      color: `hsl(${Math.floor(Math.random() * 360)} 75% 65%)`
+    const candidateInput = {
+      name: String(data.name ?? '').trim(),
+      type: String(data.type ?? '').trim(),
+      temperatureK: data.temperatureK,
+      pressureAtm: data.pressureAtm,
+      gravity: data.gravity,
+      resources: data.resources,
+      waterPotential: data.waterPotential,
+      radiationRisk: data.radiationRisk,
+      missionCost: data.missionCost,
+      fuel: data.fuel,
+      duration: data.duration,
+      notes: String(data.notes ?? '').trim()
     };
-    const errors = validateBodyInput(candidate, bodies);
+    const errors = validateBodyInput(candidateInput, bodies);
     $('#registerErrors').innerHTML = errors.map((error) => `• ${escapeHtml(error)}`).join('<br>');
     if (errors.length) return;
+
+    const candidate = {
+      id: idFromName(candidateInput.name),
+      name: candidateInput.name,
+      type: candidateInput.type,
+      temperatureK: Number(candidateInput.temperatureK),
+      pressureAtm: Number(candidateInput.pressureAtm),
+      gravity: Number(candidateInput.gravity),
+      resources: Number(candidateInput.resources),
+      waterPotential: Number(candidateInput.waterPotential),
+      radiationRisk: Number(candidateInput.radiationRisk),
+      missionCost: Number(candidateInput.missionCost),
+      fuel: Number(candidateInput.fuel),
+      duration: Number(candidateInput.duration),
+      notes: candidateInput.notes,
+      color: `hsl(${Math.floor(Math.random() * 360)} 75% 65%)`
+    };
     bodies.push(candidate);
     persist();
     event.currentTarget.reset();
